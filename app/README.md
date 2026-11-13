@@ -15,8 +15,10 @@ npm run preview   # serve app/dist locally
 
 ## Data
 
-- `public/data/*.json` is generated from `../data/*.jsonl` by
-  `npm run preprocess` (`scripts/preprocess.js`). The generated files are
+- `public/data/*.json` (`markers.json`, `place-lookup.json`,
+  `modern-to-ancient.json`: the three files `src/App.jsx` fetches) is
+  generated from `../data/*.jsonl` by `npm run preprocess`
+  (`scripts/preprocess.js`). The generated files are
   committed so the app runs without that step; re-run it after the upstream
   data changes.
 - The GeoJSON shapes shown when a place is selected come straight from the
