@@ -11,3 +11,7 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Generated copy of ../geometry; vite.config.js serves/copies it from the
+# repo-root geometry/ folder instead (see app/README.md)
+app/public/data/geometry/
