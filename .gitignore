@@ -1,0 +1,17 @@
+# Dependencies and build output (the app's own app/.gitignore covers these too)
+node_modules/
+dist/
+
+# Local editor / agent settings
+.claude/settings.local.json
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Generated copy of ../geometry; vite.config.js serves/copies it from the
+# repo-root geometry/ folder instead (see app/README.md)
+app/public/data/geometry/

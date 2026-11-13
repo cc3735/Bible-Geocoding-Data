@@ -37,6 +37,45 @@ function createIcon(type) {
   });
 }
 
+// Build the popup as DOM nodes with textContent so place names, types and
+// file names from the dataset are never parsed as HTML.
+function createPopupContent(m) {
+  const add = (parent, tag, text, className) => {
+    const node = document.createElement(tag);
+    if (text != null) node.textContent = text;
+    if (className) node.className = className;
+    parent.appendChild(node);
+    return node;
+  };
+
+  const root = document.createElement('div');
+  root.className = 'popup-content';
+  add(root, 'strong', m.name);
+
+  const ancientNames = Object.values(m.ancientAssoc || {})
+    .map(a => a.name)
+    .join(', ');
+  if (ancientNames) {
+    add(root, 'br');
+    add(root, 'em', `Biblical: ${ancientNames}`);
+  }
+
+  add(root, 'br');
+  add(root, 'span', m.type, 'popup-type');
+
+  if (m.thumbnail) {
+    add(root, 'br');
+    const img = add(root, 'img');
+    img.src = `https://a.openbible.info/geo/thumbnails/${encodeURIComponent(m.thumbnail)}`;
+    img.alt = m.name || '';
+    img.style.cssText = 'width:100%;max-width:200px;margin-top:4px;border-radius:4px;';
+  }
+
+  add(root, 'br');
+  add(root, 'small', 'Click for details');
+  return root;
+}
+
 export default function MapView({ markers, onMarkerClick, selectedPlace }) {
   const mapRef = useRef(null);
   const mapInstance = useRef(null);
@@ -88,20 +127,7 @@ export default function MapView({ markers, onMarkerClick, selectedPlace }) {
       if (m.lat == null || m.lon == null) continue;
       const marker = L.marker([m.lat, m.lon], { icon: createIcon(m.type) });
 
-      // Build popup
-      const ancientNames = Object.values(m.ancientAssoc || {})
-        .map(a => a.name)
-        .join(', ');
-
-      marker.bindPopup(`
-        <div class="popup-content">
-          <strong>${m.name}</strong>
-          ${ancientNames ? `<br><em>Biblical: ${ancientNames}</em>` : ''}
-          <br><span class="popup-type">${m.type}</span>
-          ${m.thumbnail ? `<br><img src="https://a.openbible.info/geo/thumbnails/${m.thumbnail}" alt="${m.name}" style="width:100%;max-width:200px;margin-top:4px;border-radius:4px;">` : ''}
-          <br><small>Click for details</small>
-        </div>
-      `);
+      marker.bindPopup(() => createPopupContent(m));
 
       marker.on('click', () => onMarkerClick(m));
       cluster.addLayer(marker);

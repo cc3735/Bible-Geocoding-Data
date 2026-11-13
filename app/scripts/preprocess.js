@@ -1,14 +1,14 @@
-import { readFileSync, writeFileSync, mkdirSync, readdirSync } from 'fs';
+import { readFileSync, writeFileSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const dataDir = join(__dirname, '..', '..', 'data');
 const outDir = join(__dirname, '..', 'public', 'data');
-const geoSrcDir = join(__dirname, '..', '..', 'geometry');
+// GeoJSON shapes are not copied here: vite.config.js serves ../../geometry at
+// /data/geometry/ in dev and copies it into dist/ at build time.
 
 mkdirSync(outDir, { recursive: true });
-mkdirSync(join(outDir, 'geometry'), { recursive: true });
 
 function readJsonl(file) {
   return readFileSync(join(dataDir, file), 'utf-8')
@@ -45,7 +45,6 @@ for (const m of modern) {
 // 2. Process ancient places -> place details with verse references
 const ancient = readJsonl('ancient.jsonl');
 const places = [];
-const verseIndex = {}; // book -> places
 
 for (const a of ancient) {
   // Get best resolution coordinates
@@ -69,13 +68,6 @@ for (const a of ancient) {
     ref: v.readable,
     osis: v.osis,
   }));
-
-  // Build verse index by book
-  for (const v of a.verses || []) {
-    const book = v.osis.split('.')[0];
-    if (!verseIndex[book]) verseIndex[book] = new Set();
-    verseIndex[book].add(a.id);
-  }
 
   // Confidence score from identifications
   let confidence = 0;
@@ -119,42 +111,10 @@ for (const a of ancient) {
   });
 }
 
-// Convert verse index sets to arrays
-const verseIndexOut = {};
-for (const [book, ids] of Object.entries(verseIndex)) {
-  verseIndexOut[book] = [...ids];
-}
-
-// 3. Copy relevant GeoJSON files
-let copiedGeo = 0;
-try {
-  const geoFiles = readdirSync(geoSrcDir).filter(f => f.endsWith('.geojson'));
-  for (const f of geoFiles) {
-    const src = readFileSync(join(geoSrcDir, f), 'utf-8');
-    writeFileSync(join(outDir, 'geometry', f), src);
-    copiedGeo++;
-  }
-} catch (e) {
-  console.log('Warning: could not copy geometry files:', e.message);
-}
-
-// 4. Write output files
+// 3. Write output files (only the ones the app fetches: see src/App.jsx)
 writeFileSync(join(outDir, 'markers.json'), JSON.stringify(markers));
-writeFileSync(join(outDir, 'places.json'), JSON.stringify(places));
-writeFileSync(join(outDir, 'verse-index.json'), JSON.stringify(verseIndexOut));
 
-// 5. Build a combined lightweight markers file for initial map load
-const lightMarkers = markers.map(m => ({
-  id: m.id,
-  n: m.name,
-  t: m.type,
-  la: m.lat,
-  lo: m.lon,
-  g: m.hasPolygon ? 1 : 0,
-}));
-writeFileSync(join(outDir, 'markers-light.json'), JSON.stringify(lightMarkers));
-
-// 6. Build place lookup by id
+// 4. Build place lookup by id
 const placeLookup = {};
 for (const p of places) {
   placeLookup[p.id] = p;
@@ -173,5 +133,3 @@ writeFileSync(join(outDir, 'modern-to-ancient.json'), JSON.stringify(modernToAnc
 
 console.log(`Processed ${markers.length} modern locations`);
 console.log(`Processed ${places.length} ancient places`);
-console.log(`Copied ${copiedGeo} GeoJSON files`);
-console.log(`Verse index covers ${Object.keys(verseIndexOut).length} books`);
