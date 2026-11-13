@@ -1,0 +1,13 @@
+# Dependencies and build output (the app's own app/.gitignore covers these too)
+node_modules/
+dist/
+
+# Local editor / agent settings
+.claude/settings.local.json
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
