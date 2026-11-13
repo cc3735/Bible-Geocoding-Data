@@ -5,6 +5,13 @@ import FilterPanel from './components/FilterPanel';
 import PlaceDetail from './components/PlaceDetail';
 import './App.css';
 
+function fetchJson(url) {
+  return fetch(url).then(r => {
+    if (!r.ok) throw new Error(`${url}: HTTP ${r.status}`);
+    return r.json();
+  });
+}
+
 function App() {
   const [markers, setMarkers] = useState([]);
   const [modernToAncient, setModernToAncient] = useState({});
@@ -13,16 +20,21 @@ function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState({ types: [] });
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
 
   useEffect(() => {
     Promise.all([
-      fetch('/data/markers.json').then(r => r.json()),
-      fetch('/data/modern-to-ancient.json').then(r => r.json()),
-      fetch('/data/place-lookup.json').then(r => r.json()),
+      fetchJson('/data/markers.json'),
+      fetchJson('/data/modern-to-ancient.json'),
+      fetchJson('/data/place-lookup.json'),
     ]).then(([m, mta, pl]) => {
       setMarkers(m);
       setModernToAncient(mta);
       setPlaceLookup(pl);
+      setLoading(false);
+    }).catch(err => {
+      console.error('Failed to load map data:', err);
+      setLoadError(err.message || String(err));
       setLoading(false);
     });
   }, []);
@@ -48,6 +60,16 @@ function App() {
   }, [modernToAncient, placeLookup]);
 
   const placeTypes = [...new Set(markers.map(m => m.type))].sort();
+
+  if (loadError) {
+    return (
+      <div className="loading">
+        <h2>Could not load Bible Atlas data</h2>
+        <p>{loadError}</p>
+        <p>Run <code>npm run preprocess</code> in <code>app/</code> if the data files are missing, then reload.</p>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
